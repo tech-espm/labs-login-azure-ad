@@ -28,6 +28,11 @@ const maxResultados = (1 << 14), // 2 ^ 14 = 16384
 	resultados: Resultado[] = new Array(maxResultados);
 let ultimoResultado = 0;
 
+const testeMaxResultados = (1 << 7), // 2 ^ 7 = 128
+	testeMaxResultadosMask = testeMaxResultados - 1,
+	testeResultados: Resultado[] = new Array(testeMaxResultados);
+let testeUltimoResultado = 0;
+
 function adLogin(req: express.Request, res: express.Response, next: express.NextFunction) {
 	// https://www.npmjs.com/package/passport-azure-ad
 	// https://docs.microsoft.com/en-us/graph/tutorials/node
@@ -137,6 +142,82 @@ router.get("/token/:token", (req: express.Request, res: express.Response) => {
 		return;
 	}
 	resultados[id] = null;
+	res.json(resultado);
+});
+
+router.all("/teste-redir", (req: express.Request, res: express.Response) => {
+	const callback = req.query["callback"] as string;
+	if (!callback) {
+		res.status(400).json("Parâmetro callback faltando!");
+		return;
+	}
+	if (req.body && req.body.nome && req.body.user) {
+		const nome = (req.body.nome as string).normalize().trim(),
+			user = (req.body.user as string).normalize().trim().toLowerCase();
+		if (nome && user) {
+			if (nome.length > 50 || user.length > 30) {
+				res.status(400).json("Nome/login muito longo!");
+			} else {
+				testeUltimoResultado++;
+				testeUltimoResultado &= testeMaxResultadosMask;
+				const dados = new Usuario();
+				dados.aluno = !!req.body.aluno;
+				dados.email = user + (dados.aluno ? "@acad.espm.br" : "@espm.br");
+				dados.emailAcademico = dados.email;
+				dados.nome = nome;
+				dados.user = user;
+				const resultado: Resultado = {
+					token: intToHex(testeUltimoResultado ^ appsettings.hashId) + randomBytes(16).toString("hex"),
+					erro: null,
+					dados: dados
+				};
+				testeResultados[testeUltimoResultado] = resultado;
+				res.redirect(callback + ((callback.indexOf("?") >= 0) ? "&token=" : "?token=") + resultado.token);
+			}
+			return;
+		}
+	}
+	res.send(`<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt-BR">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Teste de Integração</title>
+</head>
+<body>
+	<form method="POST">
+		<p>Forneça um nome de usuário (login) qualquer, como joão.silva, e diga se esse usuário deve ser entendido ou não como aluno.</p>
+		<p>O login forncecido aqui não precisa existir no Azure real, <b>pois as informações fornecidas aqui são utilizadas apenas para fins de teste de integração, e não têm qualquer tipo de ligação com o Azure real</b>.</p>
+		<p><input type="text" spellcheck="false" id="nome" name="nome" size="30" maxlength="50" placeholder="Nome (como João da Silva)" /></p>
+		<p><input type="text" spellcheck="false" id="user" name="user" size="30" maxlength="30" placeholder="Login (como joão.silva)" /></p>
+		<p><label><input type="checkbox" id="aluno" name="aluno" /> Considerar como aluno?</label></p>
+		<p><button type="submit">Enviar</button></p>
+	</form>
+</body>
+</html>`);
+});
+
+router.get("/teste-token/:token", (req: express.Request, res: express.Response) => {
+	const token = req.params["token"] as string;
+	let id: number;
+	if (!token ||
+		token.length !== 40 ||
+		isNaN(id = parseInt(token.substr(0, 8), 16)) ||
+		(id = (id ^ appsettings.hashId)) < 0 ||
+		id >= testeMaxResultados) {
+		res.json({ token: null, erro: "Token inválido", dados: null });
+		return;
+	}
+	const resultado = testeResultados[id];
+	if (!resultado) {
+		res.json({ token: null, erro: "Dados nulos para o token requisitado", dados: null });
+		return;
+	}
+	if (resultado.token !== token) {
+		res.json({ token: null, erro: "Token não confere", dados: null });
+		return;
+	}
+	testeResultados[id] = null;
 	res.json(resultado);
 });
 
