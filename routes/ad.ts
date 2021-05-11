@@ -59,9 +59,9 @@ function adLogin(req: express.Request, res: express.Response, next: express.Next
 					dados = null;
 				} else {
 					dados.user = (user.userPrincipalName as string || "").trim().toLowerCase();
-					if (!dados.user || (!dados.user.endsWith("@espm.br") && !dados.user.endsWith("@acad.espm.br"))) {
+					if (!dados.user || (!dados.user.endsWith("@espm.br") && !dados.user.endsWith("@acad.espm.br") && !dados.user.endsWith("@alumni.espm.br"))) {
 						dados.user = (user.mail || "").trim();
-						if (!dados.user || (!dados.user.endsWith("@espm.br") && !dados.user.endsWith("@acad.espm.br"))) {
+						if (!dados.user || (!dados.user.endsWith("@espm.br") && !dados.user.endsWith("@acad.espm.br") && !dados.user.endsWith("@alumni.espm.br"))) {
 							erro = "Informações sobre o login do usuário faltantes no AD";
 							dados = null;
 						} else {
@@ -74,7 +74,7 @@ function adLogin(req: express.Request, res: express.Response, next: express.Next
 						dados.emailAcademico = dados.user;
 						if (!dados.email)
 							dados.email = dados.user;
-						dados.aluno = dados.user.endsWith("@acad.espm.br");
+						dados.aluno = (dados.user.endsWith("@acad.espm.br") || dados.user.endsWith("@alumni.espm.br"));
 						dados.user = dados.user.substring(0, dados.user.lastIndexOf("@"));
 						if (!dados.user) {
 							erro = "E-mail de login do usuário está inválido no AD";
