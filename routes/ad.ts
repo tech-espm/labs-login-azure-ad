@@ -48,6 +48,9 @@ function adLogin(req: express.Request, res: express.Response, next: express.Next
 				// https://github.com/microsoftgraph/msgraph-sdk-javascript
 				// https://github.com/microsoftgraph/msgraph-training-nodeexpressapp/blob/main/tutorial/04-add-aad-auth.md
 
+				// https://docs.microsoft.com/en-us/graph/api/user-list-calendars?view=graph-rest-1.0&tabs=http
+				//const calendarios = await client.api("/me/calendars").get();
+
 				// info é o accessToken, enviado pelo callback em app.ts
 				const client = graph.Client.init({ authProvider: (done) => { done(null, info); } });
 				const user = await client.api("/me").get();
