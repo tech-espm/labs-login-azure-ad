@@ -23,7 +23,7 @@ interface Resultado {
 	dados: Usuario;
 }
 
-const maxResultados = (1 << 14), // 2 ^ 14 = 16384
+const maxResultados = (1 << 15), // 2 ^ 15 = 32768
 	maxResultadosMask = maxResultados - 1,
 	resultados: Resultado[] = new Array(maxResultados);
 let ultimoResultado = 0;
